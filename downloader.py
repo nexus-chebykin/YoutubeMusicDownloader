@@ -5,7 +5,7 @@ FFMPEG_PATH = r'C:\Users\Simon\Desktop\мм\ffmpeg-2021-10-18-git-d04c005021-ful
 
 
 def try_download(link, download=False):
-    # download = False -> just prints out avalible formats
+    # download = False -> just prints out available formats
     # download = True -> downloads into  ./downloaded/
     with YoutubeDL() as yt:
         info = yt.extract_info(link, download=False)
@@ -22,11 +22,12 @@ def try_download(link, download=False):
             'default': 'downloaded/%(title)s.%(ext)s'
         },
         'writethumbnail': True,
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'opus',
-            'preferredquality': '0'
-        },
+        'postprocessors': [
+            {
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'opus',
+                'preferredquality': '0'
+            },
             {'key': 'EmbedThumbnail'}
         ],
     }
@@ -38,6 +39,9 @@ def try_download(link, download=False):
             info = yt.extract_info(link, download=False)
             yt.list_formats(info)
 
+
+# def try_download_video(link):
+# todo
 
 was = False
 for line in open('downloader_script_input.txt'):
