@@ -1,10 +1,35 @@
+import os
+
 from yt_dlp import YoutubeDL
-
 # Change Me!
-FFMPEG_PATH = r'C:\Users\Simon\Desktop\мм\ffmpeg-2021-10-18-git-d04c005021-full_build\ffmpeg-2021-10-18-git-d04c005021-full_build\bin'
+FFMPEG_PATH = os.environ['FFMPEG_PATH']
+ydl_opts_download_music = {
+    'ffmpeg_location': FFMPEG_PATH,
+    'format': 'bestaudio',
+    'outtmpl': {
+        'default': 'downloaded/%(artist)s - %(title)s.%(ext)s'
+    },
+    'writethumbnail': True,
+    'postprocessors': [
+        {
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'opus',
+            'preferredquality': '0'
+        },
+        {'key': 'EmbedThumbnail'}
+    ],
+}
+
+ydl_opts_download_video = {
+    'ffmpeg_location': FFMPEG_PATH,
+    'format': 'bestvideo*+bestaudio/best',
+    'outtmpl': {
+        'default': 'downloaded/%(uploader)s - %(title)s.%(ext)s'
+    },
+}
 
 
-def try_download(link, download=False):
+def try_download_music(link, download=False):
     # download = False -> just prints out available formats
     # download = True -> downloads into  ./downloaded/
     with YoutubeDL() as yt:
@@ -15,24 +40,7 @@ def try_download(link, download=False):
         else:
             raise Exception("Format not found")
 
-    ydl_opts_download = {
-        'ffmpeg_location': FFMPEG_PATH,
-        'format': 'bestaudio',
-        'outtmpl': {
-            'default': 'downloaded/%(title)s.%(ext)s'
-        },
-        'writethumbnail': True,
-        'postprocessors': [
-            {
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'opus',
-                'preferredquality': '0'
-            },
-            {'key': 'EmbedThumbnail'}
-        ],
-    }
-
-    with YoutubeDL(ydl_opts_download) as yt:
+    with YoutubeDL(ydl_opts_download_music) as yt:
         if download:
             yt.download(link)
         else:
@@ -40,8 +48,10 @@ def try_download(link, download=False):
             yt.list_formats(info)
 
 
-# def try_download_video(link):
-# todo
+def try_download_video(link):
+    with YoutubeDL(ydl_opts_download_video) as yt:
+        yt.download(link)
+
 
 was = False
 for line in open('downloader_script_input.txt'):
@@ -49,5 +59,5 @@ for line in open('downloader_script_input.txt'):
         was = True
     elif was:
         link = line.strip().split('&')[0]
-        try_download(link, download=True)
-        # print(link)
+        # try_download_music(link, download=True)
+        try_download_video(link)
