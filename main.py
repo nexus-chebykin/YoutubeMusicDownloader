@@ -49,12 +49,12 @@ client = telethon.TelegramClient(session='../myself' if not WINDOWS else 'myself
 users: Dict[int, User] = {}
 if WINDOWS:
     commands = {
-        "ping": "ping -n 4",
+        "ping": ["ping", "-n", "4"],
         "uptime": r'C://Program Files (x86)//PowerShell//7//pwsh.exe -Command uptime'
     }
 else:
     commands = {
-        "ping": "ping -c 4",
+        "ping": ["ping", "-c", "4", ],
         "uptime": "uptime"
     }
 
@@ -95,10 +95,12 @@ async def handleAlive(user: User):
                            f"```{uptime}```\n"
                            f"My IP is {getIp()}")
 
+
 async def handlePing(user: User):
     target = user.lastMessage.split()[1]
-    result = removeColors(subprocess.check_output(commands["ping"] + f" {target}", shell=not WINDOWS).decode().strip())
+    result = removeColors(subprocess.check_output([*commands["ping"], f"{target}"]).decode().strip())
     await user.sendMessage(result)
+
 
 async def handleYoutubeDownload(user: User):
     if not downloader.isVideo(user.lastMessage): return
