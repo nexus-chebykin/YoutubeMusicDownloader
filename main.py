@@ -43,10 +43,11 @@ class User:
 
 API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
+WINDOWS = platform.system() == "Windows"
 
-client = telethon.TelegramClient('myself', API_ID, API_HASH)
+client = telethon.TelegramClient(session='../myself' if not WINDOWS else 'myself', api_id=API_ID, api_hash=API_HASH)
 users: Dict[int, User] = {}
-if platform.system() == "Windows":
+if WINDOWS:
     commands = {
         "ping": "ping -n 4",
         "uptime": r'C://Program Files (x86)//PowerShell//7//pwsh.exe -Command uptime'
