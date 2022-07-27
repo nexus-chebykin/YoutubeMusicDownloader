@@ -90,14 +90,14 @@ async def handleBeginDialog(user: User):
 
 
 async def handleAlive(user: User):
-    uptime = removeColors(subprocess.check_output(commands["uptime"]).decode().strip())
+    uptime = removeColors(subprocess.check_output(commands["uptime"], shell=not WINDOWS).decode().strip())
     await user.sendMessage("I am **indeed** alive!\n"
                            f"```{uptime}```\n"
                            f"My IP is {getIp()}")
 
 async def handlePing(user: User):
     target = user.lastMessage.split()[1]
-    result = removeColors(subprocess.check_output(commands["ping"] + f" {target}").decode().strip())
+    result = removeColors(subprocess.check_output(commands["ping"] + f" {target}", shell=not WINDOWS).decode().strip())
     await user.sendMessage(result)
 
 async def handleYoutubeDownload(user: User):
