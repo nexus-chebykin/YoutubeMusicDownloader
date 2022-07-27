@@ -1,1 +1,6 @@
+pip
+cryptg
+pillow
+aiohttp
 yt-dlp
+telethon
