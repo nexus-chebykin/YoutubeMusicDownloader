@@ -4,7 +4,7 @@ from yt_dlp import YoutubeDL
 
 # Change Me!
 FFMPEG_PATH = os.environ['FFMPEG_PATH']
-
+print(FFMPEG_PATH)
 
 def isVideo(link):
     if 'playlist' in link or ' ' in link:
@@ -76,5 +76,5 @@ if __name__ == '__main__':
             was = True
         elif was:
             link = line.strip().split('&')[0]
-            # try_download_music(link, download=True)
-            try_download_video(link)
+            try_download_music(link, download=True)
+            # try_download_video(link)

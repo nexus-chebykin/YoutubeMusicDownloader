@@ -3,7 +3,6 @@ import os
 import pathlib
 import re
 import shutil
-import urllib.request
 from typing import Dict, List
 import downloader, telethon
 from telethon.tl.types import PeerUser
@@ -12,7 +11,7 @@ from enum import Enum, auto
 import subprocess
 import random
 import platform
-
+import logging
 
 class UserState(Enum):
     NONE = 1
@@ -26,10 +25,12 @@ class User:
     lastMessage: str
     link: str  # Youtube link to download
     toDelete: List[Message] = []
+    lock: asyncio.Lock
 
     def __init__(self, peer):
         self.peer = peer
         self.state = UserState.NONE
+        self.lock = asyncio.Lock()
 
     def sendMessage(self, *args, **kwargs):
         return client.send_message(self.peer, *args, **kwargs)
@@ -47,17 +48,11 @@ WINDOWS = platform.system() == "Windows"
 
 client = telethon.TelegramClient(session='../myself' if not WINDOWS else 'myself', api_id=API_ID, api_hash=API_HASH)
 users: Dict[int, User] = {}
-if WINDOWS:
-    commands = {
-        "ping": ["ping", "-n", "4"],
-        "uptime": r'C://Program Files (x86)//PowerShell//7//pwsh.exe -Command uptime'
-    }
-else:
-    commands = {
-        "ping": ["ping", "-c", "4", ],
-        "uptime": "uptime"
-    }
-
+commands = {
+    "ping": ["Test-Connection"],
+    "uptime": ["Get-Uptime"],
+    "restart": ["Restart-Computer"] if WINDOWS else ["reboot"]
+}
 
 def getIp():
     import urllib.request
@@ -113,29 +108,27 @@ async def handleYoutubeDownload(user: User):
     user.link = user.lastMessage
     await asyncio.sleep(30)
     if user.state == UserState.RESPONSE_MUSIC_OR_VIDEO:
-        user.state = UserState.DETENTION
+        # User did not do anything
         await sendFile(user, type='music')
-        user.state = UserState.NONE
         user.deleteMessages()
+        user.state = UserState.NONE
+
+
 
 
 async def handleDecisionMusicOrVideo(user: User, event):
     user.toDelete.append(event.message)
     # Answer is digit 1-3 - useless
     if user.lastMessage == '1':
-        user.state = UserState.DETENTION
         await sendFile(user, type='music')
     elif user.lastMessage == '2':
-        user.state = UserState.DETENTION
         await sendFile(user, type='video')
-    elif user.lastMessage == '3':
-        user.state = UserState.DETENTION
-    else:
+    elif user.lastMessage != '3':
         user.toDelete.append(await user.sendMessage("Не понял, попробуй ещё."))
         # Useless message
         return
-    user.state = UserState.NONE
     user.deleteMessages()
+    user.state = UserState.NONE
     # В конце всей цепочки подчищаем юзлесс сообщения
 
 
@@ -143,16 +136,17 @@ async def handleDecisionMusicOrVideo(user: User, event):
 async def mainHandler(event: telethon.events.newmessage.NewMessage.Event):
     peer = event.message.peer_id
     id = peer.user_id
+
     if id not in users:
         users[id] = User(peer)
     user = users[id]
-    if user.state == UserState.DETENTION:
-        return
-    user.lastMessage = event.message.message
-    if user.state == UserState.NONE:
-        await handleBeginDialog(user)
-    elif user.state == UserState.RESPONSE_MUSIC_OR_VIDEO:
-        await handleDecisionMusicOrVideo(user, event)
+
+    async with user.lock:
+        user.lastMessage = event.message.message
+        if user.state == UserState.NONE:
+            await handleBeginDialog(user)
+        elif user.state == UserState.RESPONSE_MUSIC_OR_VIDEO:
+            await handleDecisionMusicOrVideo(user, event)
 
 
 async def main():
@@ -160,5 +154,9 @@ async def main():
 
 
 with client:
+    client.loop.set_debug(True)
     client.loop.run_until_complete(main())
     client.loop.run_forever()
+
+#todo: read my own logs
+#todo check logs for filesystem errors
