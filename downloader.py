@@ -1,16 +1,16 @@
 import os
 
 from yt_dlp import YoutubeDL
+from subprocess import check_output
 
 # Change Me!
 FFMPEG_PATH = os.environ['FFMPEG_PATH']
-print(FFMPEG_PATH)
 
 def isVideo(link):
     if 'playlist' in link or ' ' in link:
         return False
     try:
-        with YoutubeDL({'quiet': 1} | {"noplaylist": 1}) as yt:
+        with YoutubeDL({'quiet': 1, "noplaylist": 1}) as yt:
             info = yt.extract_info(link, download=False)
         return True
     except Exception as exc:

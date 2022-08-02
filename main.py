@@ -13,10 +13,10 @@ import random
 import platform
 import logging
 
+
 class UserState(Enum):
     NONE = 1
     RESPONSE_MUSIC_OR_VIDEO = 2
-    DETENTION = 3
 
 
 class User:
@@ -42,17 +42,18 @@ class User:
         self.toDelete.clear()
 
 
-API_ID = int(os.environ["API_ID"])
-API_HASH = os.environ["API_HASH"]
-WINDOWS = platform.system() == "Windows"
+API_ID = int(os.environ["TG_API_ID"])
+API_HASH = os.environ["TG_API_HASH"]
 
-client = telethon.TelegramClient(session='../myself' if not WINDOWS else 'myself', api_id=API_ID, api_hash=API_HASH)
+client = telethon.TelegramClient(session='myself', api_id=API_ID, api_hash=API_HASH)
 users: Dict[int, User] = {}
+
 commands = {
-    "ping": ["Test-Connection"],
-    "uptime": ["Get-Uptime"],
-    "restart": ["Restart-Computer"] if WINDOWS else ["reboot"]
+    "ping": ["ping"],
+    "uptime": ["uptime"],
+    "reboot": ["reboot"]
 }
+
 
 def getIp():
     import urllib.request
@@ -75,17 +76,25 @@ async def sendFile(user: User, type):
     shutil.rmtree(pathlib.Path(f"./downloaded/{directory}"))
 
 
+async def handleReboot(user: User):
+    await user.sendMessage("Going to reboot in one minute")
+    await asyncio.sleep(60)
+    subprocess.run(commands["reboot"])
+
+
 async def handleBeginDialog(user: User):
     if user.lastMessage.lower() == "alive":
         await handleAlive(user)
     elif user.lastMessage.lower().startswith('ping'):
         await handlePing(user)
+    elif user.lastMessage.lower() == "reboot":
+        await handleReboot(user)
     else:
         await handleYoutubeDownload(user)
 
 
 async def handleAlive(user: User):
-    uptime = removeColors(subprocess.check_output(commands["uptime"], shell=not WINDOWS).decode().strip())
+    uptime = removeColors(subprocess.check_output(commands["uptime"], text=True).strip())
     await user.sendMessage("I am **indeed** alive!\n"
                            f"```{uptime}```\n"
                            f"My IP is {getIp()}")
@@ -93,7 +102,7 @@ async def handleAlive(user: User):
 
 async def handlePing(user: User):
     target = user.lastMessage.split()[1]
-    result = removeColors(subprocess.check_output([*commands["ping"], f"{target}"]).decode().strip())
+    result = removeColors(subprocess.check_output([*commands["ping"], f"{target}"], text=True).strip())
     await user.sendMessage(result)
 
 
@@ -112,8 +121,6 @@ async def handleYoutubeDownload(user: User):
         await sendFile(user, type='music')
         user.deleteMessages()
         user.state = UserState.NONE
-
-
 
 
 async def handleDecisionMusicOrVideo(user: User, event):
@@ -158,5 +165,5 @@ with client:
     client.loop.run_until_complete(main())
     client.loop.run_forever()
 
-#todo: read my own logs
-#todo check logs for filesystem errors
+# todo: read my own logs
+# todo check logs for filesystem errors
