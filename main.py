@@ -49,7 +49,7 @@ client = telethon.TelegramClient(session='myself', api_id=API_ID, api_hash=API_H
 users: Dict[int, User] = {}
 
 commands = {
-    "ping": ["ping"],
+    "ping": ["ping", "-c", "4"],
     "uptime": ["uptime"],
     "reboot": ["reboot"]
 }
@@ -161,7 +161,6 @@ async def main():
 
 
 with client:
-    client.loop.set_debug(True)
     client.loop.run_until_complete(main())
     client.loop.run_forever()
 
