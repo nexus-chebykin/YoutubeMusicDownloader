@@ -1,4 +1,5 @@
 import asyncio
+import io
 import os
 import pathlib
 import re
@@ -10,8 +11,6 @@ from telethon.tl.custom.message import Message
 from enum import Enum, auto
 import subprocess
 import random
-import platform
-import logging
 
 
 class UserState(Enum):
@@ -36,11 +35,14 @@ class User:
     def sendMessage(self, *args, **kwargs):
         return client.send_message(self.peer, *args, **kwargs)
 
-    def deleteMessages(self):
-        for message in self.toDelete:
-            asyncio.create_task(message.delete())
+    async def deleteMessages(self):
+        await asyncio.gather(*(message.delete() for message in self.toDelete))
         print(self.toDelete)
         self.toDelete.clear()
+
+    async def resetDialog(self):
+        self.state = UserState.NONE
+        await self.deleteMessages()
 
 
 API_ID = int(os.environ["TG_API_ID"])
@@ -52,7 +54,8 @@ users: Dict[int, User] = {}
 commands = {
     "ping": ["ping", "-c", "4"],
     "uptime": ["uptime"],
-    "reboot": ["reboot"]
+    "reboot": ["reboot"],
+    "logs": ["journalctl", "-u", "-b", "piBot.service"]
 }
 
 
@@ -66,9 +69,9 @@ def removeColors(s):
     return ansi_escape.sub('', s)
 
 
-async def sendFile(user: User, type):
+async def sendFile(user: User, kind):
     directory = random.randint(1, 1_000_000_000)
-    if type == 'music':
+    if kind == 'music':
         downloader.try_download_music(user.link, download=True, subdirectory=f'{directory}/')
     else:
         downloader.try_download_video(user.link, subdirectory=f'{directory}/')
@@ -83,13 +86,24 @@ async def handleReboot(user: User):
     subprocess.run(commands["reboot"])
 
 
+async def handleSendLogs(user: User):
+    # logs = subprocess.check_output(commands["logs"], text=True)
+    logs = "aboba"
+    asFile = io.StringIO(logs)
+    asFile.name = 'logs.txt'
+    await user.sendMessage(file=asFile)
+
+
 async def handleBeginDialog(user: User):
-    if user.lastMessage.lower() == "alive":
+    message = user.lastMessage.lower()
+    if message == "alive":
         await handleAlive(user)
-    elif user.lastMessage.lower().startswith('ping'):
+    elif message.startswith('ping'):
         await handlePing(user)
-    elif user.lastMessage.lower() == "reboot":
+    elif message.startswith("reboot"):
         await handleReboot(user)
+    elif message.startswith("log"):
+        await handleSendLogs(user)
     else:
         await handleYoutubeDownload(user)
 
@@ -121,9 +135,8 @@ async def handleYoutubeDownload(user: User):
         await asyncio.sleep(30)
         if user.messageCounter == currentMessageCounter:
             # User did not do anything
-            await sendFile(user, type='music')
-            user.deleteMessages()
-            user.state = UserState.NONE
+            await sendFile(user, kind='music')
+            await user.resetDialog()
 
     asyncio.create_task(responseTimeout(user.messageCounter))
 
@@ -132,26 +145,24 @@ async def handleDecisionMusicOrVideo(user: User, event):
     user.toDelete.append(event.message)
     # Answer is digit 1-3 - useless
     if user.lastMessage == '1':
-        await sendFile(user, type='music')
+        await sendFile(user, kind='music')
     elif user.lastMessage == '2':
-        await sendFile(user, type='video')
+        await sendFile(user, kind='video')
     elif user.lastMessage != '3':
         user.toDelete.append(await user.sendMessage("Не понял, попробуй ещё."))
         # Useless message
         return
-    user.deleteMessages()
-    user.state = UserState.NONE
-    # В конце всей цепочки подчищаем юзлесс сообщения
+    await user.resetDialog()
 
 
 @client.on(telethon.events.NewMessage('me'))
 async def mainHandler(event: telethon.events.newmessage.NewMessage.Event):
     peer = event.message.peer_id
-    id = peer.user_id
+    userId = peer.user_id
 
-    if id not in users:
-        users[id] = User(peer)
-    user = users[id]
+    if userId not in users:
+        users[userId] = User(peer)
+    user = users[userId]
 
     async with user.lock:
         user.messageCounter += 1
