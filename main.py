@@ -26,6 +26,7 @@ class User:
     link: str  # Youtube link to download
     toDelete: List[Message] = []
     lock: asyncio.Lock
+    messageCounter = 0
 
     def __init__(self, peer):
         self.peer = peer
@@ -115,12 +116,16 @@ async def handleYoutubeDownload(user: User):
     # Useless message
     user.state = UserState.RESPONSE_MUSIC_OR_VIDEO
     user.link = user.lastMessage
-    await asyncio.sleep(30)
-    if user.state == UserState.RESPONSE_MUSIC_OR_VIDEO:
-        # User did not do anything
-        await sendFile(user, type='music')
-        user.deleteMessages()
-        user.state = UserState.NONE
+
+    async def responseTimeout(currentMessageCounter: int):
+        await asyncio.sleep(30)
+        if user.messageCounter == currentMessageCounter:
+            # User did not do anything
+            await sendFile(user, type='music')
+            user.deleteMessages()
+            user.state = UserState.NONE
+
+    asyncio.create_task(responseTimeout(user.messageCounter))
 
 
 async def handleDecisionMusicOrVideo(user: User, event):
@@ -149,6 +154,7 @@ async def mainHandler(event: telethon.events.newmessage.NewMessage.Event):
     user = users[id]
 
     async with user.lock:
+        user.messageCounter += 1
         user.lastMessage = event.message.message
         if user.state == UserState.NONE:
             await handleBeginDialog(user)
