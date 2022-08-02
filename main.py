@@ -180,7 +180,7 @@ async def main():
         timeAlive = float(f.read().split()[0])
     bootTime = currentTime - datetime.timedelta(seconds=timeAlive + 60)
     with open('/var/log/syslog') as f:
-        interestingEntries = filter(lambda entry: "verbatim" in entry.lower() or "mitabrev" in entry.lower(), f.read().split('\n'))
+        interestingEntries = list(filter(lambda entry: "verbatim" in entry.lower() or "mitabrev" in entry.lower(), f.read().split('\n')))
         print(interestingEntries)
     print("done")
 
