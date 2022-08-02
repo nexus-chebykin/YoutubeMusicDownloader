@@ -189,7 +189,7 @@ async def main():
             timestamp = datetime.datetime.strptime(timestamp, "%b %d %H:%M:%S").replace(
                 year=datetime.date.today().year
             )
-            if timestamp >= bootTime:
+            if timestamp >= bootTime and "fsck" in entry:
                 reallyInterestingEntries.append(entry)
         await client.send_message('me', "Disk logs:\n" + '\n'.join(reallyInterestingEntries))
     print("done")
