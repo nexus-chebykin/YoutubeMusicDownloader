@@ -89,7 +89,7 @@ async def handleReboot(user: User):
 async def handleSendLogs(user: User):
     # logs = subprocess.check_output(commands["logs"], text=True)
     logs = "aboba"
-    asFile = io.StringIO(logs)
+    asFile = io.BytesIO(logs.encode("utf-8"))
     asFile.name = 'logs.txt'
     await user.sendMessage(file=asFile)
 
