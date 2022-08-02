@@ -180,12 +180,21 @@ async def main():
         timeAlive = float(f.read().split()[0])
     bootTime = currentTime - datetime.timedelta(seconds=timeAlive + 60)
     with open('/var/log/syslog') as f:
-        interestingEntries = list(filter(lambda entry: "verbatim" in entry.lower() or "mitabrev" in entry.lower(), f.read().split('\n')))
-        print(interestingEntries)
+        interestingEntries = list(
+            filter(lambda entry: "verbatim" in entry.lower() or "mitabrev" in entry.lower(), f.read().split('\n')))
+        reallyInterestingEntries = []
+        for entry in interestingEntries:
+            timestamp = ' '.join(entry[:15].split())
+            # Aug 2 17:25:01
+            timestamp = datetime.datetime.strptime(timestamp, "%b %d %H:%M:%S").replace(
+                year=datetime.date.today().year
+            )
+            if timestamp >= bootTime:
+                reallyInterestingEntries.append(entry)
+        await client.send_message('me', "Disk logs:\n" + '\n'.join(*reallyInterestingEntries))
     print("done")
 
 
 with client:
     client.loop.run_until_complete(main())
     client.loop.run_forever()
-
