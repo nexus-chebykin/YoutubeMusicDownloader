@@ -191,7 +191,7 @@ async def main():
             )
             if timestamp >= bootTime:
                 reallyInterestingEntries.append(entry)
-        await client.send_message('me', "Disk logs:\n" + '\n'.join(*reallyInterestingEntries))
+        await client.send_message('me', "Disk logs:\n" + '\n'.join(reallyInterestingEntries))
     print("done")
 
 
