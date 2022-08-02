@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import io
 import os
 import pathlib
@@ -87,9 +88,8 @@ async def handleReboot(user: User):
 
 
 async def handleSendLogs(user: User):
-    # logs = subprocess.check_output(commands["logs"], text=True)
-    logs = "aboba"
-    asFile = io.BytesIO(logs.encode("utf-8"))
+    logs = subprocess.check_output(commands["logs"])
+    asFile = io.BytesIO(logs)
     asFile.name = 'logs.txt'
     await user.sendMessage(file=asFile)
 
@@ -174,6 +174,12 @@ async def mainHandler(event: telethon.events.newmessage.NewMessage.Event):
 
 
 async def main():
+    currentTime = datetime.datetime.now()
+    timeAlive = 0
+    with open('/proc/uptime', 'r') as f:
+        timeAlive = float(f.read().split()[0])
+    bootTime = currentTime - datetime.timedelta(seconds=timeAlive)
+    print(bootTime)
     print("done")
 
 
@@ -181,5 +187,4 @@ with client:
     client.loop.run_until_complete(main())
     client.loop.run_forever()
 
-# todo: read my own logs
 # todo check logs for filesystem errors
