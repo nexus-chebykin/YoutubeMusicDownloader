@@ -178,8 +178,10 @@ async def main():
     timeAlive = 0
     with open('/proc/uptime', 'r') as f:
         timeAlive = float(f.read().split()[0])
-    bootTime = currentTime - datetime.timedelta(seconds=timeAlive)
-    print(bootTime)
+    bootTime = currentTime - datetime.timedelta(seconds=timeAlive + 60)
+    with open('/var/log/syslog') as f:
+        interestingEntries = filter(lambda entry: "verbatim" in entry.lower() or "mitabrev" in entry.lower(), f.read().split('\n'))
+        print(interestingEntries)
     print("done")
 
 
@@ -187,4 +189,3 @@ with client:
     client.loop.run_until_complete(main())
     client.loop.run_forever()
 
-# todo check logs for filesystem errors
