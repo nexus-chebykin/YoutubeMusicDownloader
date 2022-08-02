@@ -1,17 +1,21 @@
+import pathlib
+(pathlib.Path(".") / "aaaaaaaaaa").mkdir()
 import asyncio
 import datetime
 import io
 import os
-import pathlib
+import random
 import re
 import shutil
-from typing import Dict, List
-import downloader, telethon
-from telethon.tl.types import PeerUser
-from telethon.tl.custom.message import Message
-from enum import Enum, auto
 import subprocess
-import random
+from enum import Enum
+from typing import Dict, List
+
+from telethon.tl.custom.message import Message
+from telethon.tl.types import PeerUser
+
+import downloader
+import telethon
 
 
 class UserState(Enum):
@@ -56,7 +60,7 @@ commands = {
     "ping": ["ping", "-c", "4"],
     "uptime": ["uptime"],
     "reboot": ["reboot"],
-    "logs": ["journalctl", "-u", "-b", "piBot.service"]
+    "logs": ["journalctl", "-u", "piBot.service", "-b"]
 }
 
 
