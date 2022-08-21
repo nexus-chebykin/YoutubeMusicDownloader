@@ -1,10 +1,13 @@
 import os
+import pathlib
 
 from yt_dlp import YoutubeDL
 from subprocess import check_output
 
 # Change Me!
 FFMPEG_PATH = os.environ['FFMPEG_PATH']
+print(FFMPEG_PATH)
+
 
 def isVideo(link):
     if 'playlist' in link or ' ' in link:
@@ -21,7 +24,7 @@ def isVideo(link):
 def try_download_music(link, download=False, subdirectory=''):
     # download = False -> just prints out available formats
     # download = True -> downloads into  ./downloaded/
-
+    # subdirectory is a string like: "subdir_name/"
     ydl_opts_download_music = {
         'ffmpeg_location': FFMPEG_PATH,
         'format': 'bestaudio',
@@ -57,6 +60,7 @@ def try_download_music(link, download=False, subdirectory=''):
 
 
 def try_download_video(link, subdirectory=''):
+    # subdirectory is a string like: "subdir_name/"
     ydl_opts_download_video = {
         'ffmpeg_location': FFMPEG_PATH,
         "noplaylist": 1,
@@ -76,5 +80,5 @@ if __name__ == '__main__':
             was = True
         elif was:
             link = line.strip().split('&')[0]
-            try_download_music(link, download=True)
+            try_download_music(link)
             # try_download_video(link)

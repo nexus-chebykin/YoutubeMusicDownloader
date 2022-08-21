@@ -1,5 +1,4 @@
 import pathlib
-(pathlib.Path(".") / "aaaaaaaaaa").mkdir()
 import asyncio
 import datetime
 import io
@@ -17,6 +16,12 @@ from telethon.tl.types import PeerUser
 import downloader
 import telethon
 
+backgroundTasks = set()
+
+def createBackgroundTask(coro):
+    task = asyncio.create_task(coro)
+    backgroundTasks.add(task)
+    task.add_done_callback(backgroundTasks.discard)
 
 class UserState(Enum):
     NONE = 1
@@ -27,7 +32,7 @@ class User:
     state: UserState
     peer: PeerUser
     lastMessage: str
-    link: str  # Youtube link to download
+    link: str  # YouTube link to download
     toDelete: List[Message] = []
     lock: asyncio.Lock
     messageCounter = 0
@@ -121,7 +126,7 @@ async def handleAlive(user: User):
 
 async def handlePing(user: User):
     target = user.lastMessage.split()[1]
-    result = removeColors(subprocess.check_output([*commands["ping"], f"{target}"], text=True).strip())
+    result = removeColors(subprocess.check_output([*commands["ping"], target], text=True).strip())
     await user.sendMessage(result)
 
 
@@ -142,7 +147,7 @@ async def handleYoutubeDownload(user: User):
             await sendFile(user, kind='music')
             await user.resetDialog()
 
-    asyncio.create_task(responseTimeout(user.messageCounter))
+    createBackgroundTask(responseTimeout(user.messageCounter))
 
 
 async def handleDecisionMusicOrVideo(user: User, event):
@@ -176,26 +181,39 @@ async def mainHandler(event: telethon.events.newmessage.NewMessage.Event):
         elif user.state == UserState.RESPONSE_MUSIC_OR_VIDEO:
             await handleDecisionMusicOrVideo(user, event)
 
+@client.on(telethon.events.NewMessage(from_users='me'))
+async def allHandler(event: telethon.events.newmessage.NewMessage.Event):
+    if event.message.text == '@all':
+        msg = ''
+        participants = await client.get_participants(await event.get_input_chat(), limit=20)
+        if participants.total <= 20:
+            for part in participants:
+                msg += f"[{part.first_name}](tg://user?id={part.id}) "
+            await client.send_message(entity=event.message.to_id, message=msg)
+
+
 
 async def main():
-    currentTime = datetime.datetime.now()
-    timeAlive = 0
-    with open('/proc/uptime', 'r') as f:
-        timeAlive = float(f.read().split()[0])
-    bootTime = currentTime - datetime.timedelta(seconds=timeAlive + 60)
-    with open('/var/log/syslog') as f:
-        interestingEntries = list(
-            filter(lambda entry: "verbatim" in entry.lower() or "mitabrev" in entry.lower(), f.read().split('\n')))
-        reallyInterestingEntries = []
-        for entry in interestingEntries:
-            timestamp = ' '.join(entry[:15].split())
-            # Aug 2 17:25:01
-            timestamp = datetime.datetime.strptime(timestamp, "%b %d %H:%M:%S").replace(
-                year=datetime.date.today().year
+    if os.name != 'nt':
+        currentTime = datetime.datetime.now()
+        timeAlive = 0
+        with open('/proc/uptime', 'r') as f:
+            timeAlive = float(f.read().split()[0])
+        bootTime = currentTime - datetime.timedelta(seconds=timeAlive + 60)
+        with open('/var/log/syslog') as f:
+            interestingEntries = list(
+                filter(lambda entry: "verbatim" in entry.lower() or "mitabrev" in entry.lower(), f.read().split('\n'))
             )
-            if timestamp >= bootTime and "fsck" in entry:
-                reallyInterestingEntries.append(entry)
-        await client.send_message('me', "Disk logs:\n" + '\n'.join(reallyInterestingEntries))
+            reallyInterestingEntries = []
+            for entry in interestingEntries:
+                timestamp = ' '.join(entry[:15].split())
+                # Aug 2 17:25:01
+                timestamp = datetime.datetime.strptime(timestamp, "%b %d %H:%M:%S").replace(
+                    year=datetime.date.today().year
+                )
+                if timestamp >= bootTime and "fsck" in entry:
+                    reallyInterestingEntries.append(entry)
+            await client.send_message('me', "Disk logs:\n" + '\n'.join(reallyInterestingEntries))
     print("done")
 
 
