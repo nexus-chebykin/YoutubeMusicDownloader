@@ -9,8 +9,8 @@ FFMPEG_PATH = os.environ['FFMPEG_PATH']
 print(FFMPEG_PATH)
 
 
-def isVideo(link):
-    if 'playlist' in link or ' ' in link:
+def isVideo(link: str):
+    if 'playlist' in link or ' ' in link or 'youtu' not in link.lower():
         return False
     try:
         with YoutubeDL({'quiet': 1, "noplaylist": 1}) as yt:
@@ -80,5 +80,7 @@ if __name__ == '__main__':
             was = True
         elif was:
             link = line.strip().split('&')[0]
-            try_download_music(link)
+            # isVideo("https://soundcloud.com/ihfmusic")
+            try_download_music(
+                'https://soundcloud.com/ihfmusic/dont-miss-out?utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing')
             # try_download_video(link)
