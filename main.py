@@ -86,7 +86,9 @@ async def sendFile(user: User, kind):
     else:
         downloader.try_download_video(user.link, subdirectory=f'{directory}/')
     user.link = ""
-    await user.sendMessage(file=next(pathlib.Path(f"./downloaded/{directory}").iterdir()))
+    file = next(pathlib.Path(f"./downloaded/{directory}").iterdir())
+    file = file.rename(file.name.removeprefix("NA - "))
+    await user.sendMessage(file=file)
     shutil.rmtree(pathlib.Path(f"./downloaded/{directory}"))
 
 
