@@ -80,7 +80,8 @@ if __name__ == '__main__':
             was = True
         elif was:
             link = line.strip().split('&')[0]
+            try_download_music(link, True, subdirectory="7213129/")
             # isVideo("https://soundcloud.com/ihfmusic")
-            try_download_music(
-                'https://soundcloud.com/ihfmusic/dont-miss-out?utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing')
+            # try_download_video(
+            #     'https://www.youtube.com/watch?v=nNYGqJd-cHU&list=PL4_hYwCyhAvbPdTFj35Zg2_y30DzeOtvS&index=3')
             # try_download_video(link)

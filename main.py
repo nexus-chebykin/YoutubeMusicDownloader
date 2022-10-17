@@ -18,10 +18,12 @@ import telethon
 
 backgroundTasks = set()
 
+
 def createBackgroundTask(coro):
     task = asyncio.create_task(coro)
     backgroundTasks.add(task)
     task.add_done_callback(backgroundTasks.discard)
+
 
 class UserState(Enum):
     NONE = 1
@@ -87,7 +89,7 @@ async def sendFile(user: User, kind):
         downloader.try_download_video(user.link, subdirectory=f'{directory}/')
     user.link = ""
     file = next(pathlib.Path(f"./downloaded/{directory}").iterdir())
-    file = file.rename(file.name.removeprefix("NA - "))
+    file = file.rename(f"./downloaded/{directory}/{file.name.removeprefix('NA - ')}")
     await user.sendMessage(file=file)
     shutil.rmtree(pathlib.Path(f"./downloaded/{directory}"))
 
@@ -183,7 +185,8 @@ async def mainHandler(event: telethon.events.newmessage.NewMessage.Event):
         elif user.state == UserState.RESPONSE_MUSIC_OR_VIDEO:
             await handleDecisionMusicOrVideo(user, event)
 
-@client.on(telethon.events.NewMessage(from_users='me'))
+
+@client.on(telethon.events.NewMessage(from_users=["me", 1054391041, 844541477, 550712077]))
 async def allHandler(event: telethon.events.newmessage.NewMessage.Event):
     if event.message.text == '@all':
         msg = ''
@@ -192,7 +195,6 @@ async def allHandler(event: telethon.events.newmessage.NewMessage.Event):
             for part in participants:
                 msg += f"[{part.first_name}](tg://user?id={part.id}) "
             await client.send_message(entity=event.message.to_id, message=msg)
-
 
 
 async def main():
