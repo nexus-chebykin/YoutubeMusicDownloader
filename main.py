@@ -194,8 +194,8 @@ async def allHandler(event: telethon.events.newmessage.NewMessage.Event):
         if participants.total <= 20:
             for part in participants:
                 msg += f"[{part.first_name}](tg://user?id={part.id}) "
-            msg = await client.send_message(entity=event.message.to_id, message=msg)
-            if event.message.from_id != 242023883:
+            msg = await client.send_message(entity=event.message.to_id, message=msg) # todo: make it work in private chats
+            if event.message.from_id.user_id != 242023883:
                 await client.send_message('me', f"You @all'ed: https://t.me/c/{msg.peer_id.channel_id}/{msg.id}",
                                           schedule=datetime.timedelta(minutes=1))
 
