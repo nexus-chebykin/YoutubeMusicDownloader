@@ -90,7 +90,7 @@ async def sendFile(user: User, kind):
     user.link = ""
     file = next(pathlib.Path(f"./downloaded/{directory}").iterdir())
     file = file.rename(f"./downloaded/{directory}/{file.name.removeprefix('NA - ')}")
-    await user.sendMessage(file=file)
+    await user.sendMessage(file=file, force_document=True)
     shutil.rmtree(pathlib.Path(f"./downloaded/{directory}"))
 
 
@@ -194,7 +194,8 @@ async def allHandler(event: telethon.events.newmessage.NewMessage.Event):
         if participants.total <= 20:
             for part in participants:
                 msg += f"[{part.first_name}](tg://user?id={part.id}) "
-            msg = await client.send_message(entity=event.message.to_id, message=msg) # todo: make it work in private chats
+            msg = await client.send_message(entity=event.message.to_id,
+                                            message=msg)  # todo: make it work in private chats
             if event.message.from_id.user_id != 242023883:
                 await client.send_message('me', f"You @all'ed: https://t.me/c/{msg.peer_id.channel_id}/{msg.id}",
                                           schedule=datetime.timedelta(minutes=1))
