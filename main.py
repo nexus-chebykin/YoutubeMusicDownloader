@@ -186,19 +186,26 @@ async def mainHandler(event: telethon.events.newmessage.NewMessage.Event):
             await handleDecisionMusicOrVideo(user, event)
 
 
-@client.on(telethon.events.NewMessage(from_users=["me", 1054391041, 844541477, 550712077]))
+@client.on(telethon.events.NewMessage())
 async def allHandler(event: telethon.events.newmessage.NewMessage.Event):
-    if event.message.text == '@all':
-        msg = ''
-        participants = await client.get_participants(await event.get_input_chat(), limit=20)
-        if participants.total <= 20:
-            for part in participants:
-                msg += f"[{part.first_name}](tg://user?id={part.id}) "
-            msg = await client.send_message(entity=event.message.to_id,
-                                            message=msg)  # todo: make it work in private chats
-            if event.message.from_id.user_id != 242023883:
-                await client.send_message('me', f"You @all'ed: https://t.me/c/{msg.peer_id.channel_id}/{msg.id}",
-                                          schedule=datetime.timedelta(minutes=1))
+    good_chats = [1795578144, 1560916143]
+    good_users = [242023883, 1054391041, 844541477, 550712077]
+    good = event.chat.id in good_chats or event.message.from_id in good_users
+    if not good:
+        return
+    if event.message.text != '@all':
+        return
+
+    msg = ''
+    participants = await client.get_participants(await event.get_input_chat(), limit=30)
+    if participants.total <= 30:
+        for part in participants:
+            msg += f"[{part.first_name}](tg://user?id={part.id}) "
+        msg = await client.send_message(entity=event.message.to_id,
+                                        message=msg)  # todo: make it work in private chats
+        if event.message.from_id.user_id != 242023883:
+            await client.send_message('me', f"You @all'ed: https://t.me/c/{msg.peer_id.channel_id}/{msg.id}",
+                                      schedule=datetime.timedelta(minutes=1))
 
 
 async def main():
