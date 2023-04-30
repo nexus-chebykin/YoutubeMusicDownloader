@@ -60,7 +60,7 @@ class User:
 API_ID = int(os.environ["TG_API_ID"])
 API_HASH = os.environ["TG_API_HASH"]
 
-client = telethon.TelegramClient(session='myself', api_id=API_ID, api_hash=API_HASH)
+client = telethon.TelegramClient(session='myself', api_id=API_ID, api_hash=API_HASH, connection_retries=None)
 users: Dict[int, User] = {}
 
 commands = {
