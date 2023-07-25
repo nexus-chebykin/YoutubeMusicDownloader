@@ -197,14 +197,15 @@ async def handleYoutubeDownload(user: User):
 async def handleDecisionMusicOrVideo(user: User, event):
     user.toDelete.append(event.message)
     # Answer is digit 1-3 - useless
+    if user.lastMessage not in ['1', '2', '3']:
+        user.toDelete.append(await user.sendMessage("Не понял, попробуй ещё."))
+        # Useless message
+        return
+    await user.progressMessage.edit("Understandable")
     if user.lastMessage == '1':
         await sendFile(user, kind='music')
     elif user.lastMessage == '2':
         await sendFile(user, kind='video')
-    elif user.lastMessage != '3':
-        user.toDelete.append(await user.sendMessage("Не понял, попробуй ещё."))
-        # Useless message
-        return
     await user.resetDialog()
 
 
