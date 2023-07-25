@@ -97,7 +97,10 @@ async def sendFile(user: User, kind: Literal['music', 'video']):
         nonlocal download_progress
         if user.progressMessage is None:
             return
-        percent = d['downloaded_bytes'] / d['total_bytes']
+        if 'total_bytes' in d:
+            percent = d['downloaded_bytes'] / d['total_bytes']
+        else:
+            percent = 0
         if int(percent * 100) // 5 > download_progress // 5:
             download_progress = int(percent * 100)
             createBackgroundTask(user.progressMessage.edit(f"Downloading: {percent:.1%}\n"
