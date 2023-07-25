@@ -8,7 +8,7 @@ import re
 import shutil
 import subprocess
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Literal
 
 from telethon.tl.custom.message import Message
 from telethon.tl.types import PeerUser
@@ -19,8 +19,11 @@ import telethon
 backgroundTasks = set()
 
 
-def createBackgroundTask(coro):
-    task = asyncio.create_task(coro)
+def createBackgroundTask(coro, loop=None):
+    if loop is not None:
+        task = asyncio.ensure_future(coro, loop=loop)
+    else:
+        task = asyncio.create_task(coro)
     backgroundTasks.add(task)
     task.add_done_callback(backgroundTasks.discard)
 
@@ -85,25 +88,41 @@ def removeColors(s):
     return ansi_escape.sub('', s)
 
 
-async def sendFile(user: User, kind):
+async def sendFile(user: User, kind: Literal['music', 'video']):
     directory = random.randint(1, 1_000_000_000)
-    if kind == 'music':
-        downloader.try_download_music(user.link, download=True, subdirectory=f'{directory}/')
-    else:
-        downloader.try_download_video(user.link, subdirectory=f'{directory}/')
+    loop = asyncio.get_running_loop()
+    download_progress = 0
+
+    def download_progress_callback(d):
+        nonlocal download_progress
+        if user.progressMessage is None:
+            return
+        percent = d['downloaded_bytes'] / d['total_bytes']
+        if int(percent * 100) // 5 > download_progress // 5:
+            download_progress = int(percent * 100)
+            createBackgroundTask(user.progressMessage.edit(f"Downloading: {percent:.1%}\n"
+                                                           f"Uploading: 0%"), loop=loop)
+
+    await asyncio.to_thread(downloader.try_download, user.link, kind, download=True, subdirectory=f'{directory}/',
+                            progress_callback=download_progress_callback)
     user.link = ""
     file = next(pathlib.Path(f"./downloaded/{directory}").iterdir())
     file = file.rename(f"./downloaded/{directory}/{file.name.removeprefix('NA - ')}")
 
-    def progress_callback(current, total):
+    upload_progress = 0
+
+    def upload_progress_callback(current, total):
+        nonlocal upload_progress
         if user.progressMessage is None:
             return
-        percent = current / total * 100
-        percent = f"{percent:.2f}"
-        createBackgroundTask(user.progressMessage.edit(f"Uploading {percent}%"))
+        percent = current / total
+        if int(percent * 100) // 5 > upload_progress // 5:
+            upload_progress = int(percent * 100)
+            createBackgroundTask(user.progressMessage.edit(f"Downloading: 100%\n"
+                                                           f"Uploading {percent:.1%}"))
 
-    uploaded_file = await client.upload_file(file, progress_callback=progress_callback)
-    await user.sendMessage(file=file, force_document=True)
+    uploaded_file = await client.upload_file(file, progress_callback=upload_progress_callback)
+    await user.sendMessage(file=uploaded_file, force_document=True)
     shutil.rmtree(pathlib.Path(f"./downloaded/{directory}"))
 
 
@@ -157,9 +176,9 @@ async def handlePing(user: User):
 async def handleYoutubeDownload(user: User):
     if not downloader.isVideo(user.lastMessage): return
     user.progressMessage = await user.sendMessage("Вы хотите скачать это как?\n"
-                                                "> 1) Музыку\n"
-                                                "2) Видео\n"
-                                                "3) Не скачивать")
+                                                  "> 1) Музыку\n"
+                                                  "2) Видео\n"
+                                                  "3) Не скачивать")
     user.toDelete.append(user.progressMessage)
     # Useless message
     user.state = UserState.RESPONSE_MUSIC_OR_VIDEO
@@ -211,7 +230,13 @@ async def mainHandler(event: telethon.events.newmessage.NewMessage.Event):
 async def allHandler(event: telethon.events.newmessage.NewMessage.Event):
     good_chats = [1795578144, 1560916143]
     good_users = [242023883, 1054391041, 844541477, 550712077]
-    good = event.chat.id in good_chats or event.message.from_id in good_users
+    chat_entity = await event.get_input_chat()
+    user_entity = await event.get_input_sender()
+    user_entity = await client.get_entity(user_entity)
+    try:
+        good = chat_entity.channel_id in good_chats or user_entity.id in good_users
+    except AttributeError:
+        return
     if not good:
         return
     if event.message.text != '@all':
@@ -240,6 +265,7 @@ async def main():
             interestingEntries = list(
                 filter(lambda entry: "verbatim" in entry.lower() or "mitabrev" in entry.lower(), f.read().split('\n'))
             )
+            # F Verbatim
             reallyInterestingEntries = []
             for entry in interestingEntries:
                 timestamp = ' '.join(entry[:15].split())

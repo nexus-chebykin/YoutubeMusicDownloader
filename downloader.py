@@ -1,5 +1,6 @@
 import os
 import pathlib
+from typing import Literal
 
 from yt_dlp import YoutubeDL
 from subprocess import check_output
@@ -21,7 +22,7 @@ def isVideo(link: str):
         return False
 
 
-def try_download_music(link, download=False, subdirectory=''):
+def try_download(link, kind: Literal['music', 'video'], download=False, subdirectory='', progress_callback=None):
     # download = False -> just prints out available formats
     # download = True -> downloads into  ./downloaded/
     # subdirectory is a string like: "subdir_name/"
@@ -39,28 +40,16 @@ def try_download_music(link, download=False, subdirectory=''):
                 'preferredcodec': 'opus',
                 'preferredquality': '0'
             },
-            {'key': 'EmbedThumbnail'}
+            {'add_chapters': True,
+             'add_infojson': 'if_exists',
+             'add_metadata': True,
+             'key': 'FFmpegMetadata'},
+            {'key': 'EmbedThumbnail'},
         ],
+        'progress_hooks': [progress_callback] if progress_callback is not None else '',
+
     }
 
-    with YoutubeDL({"noplaylist": 1}) as yt:
-        info = yt.extract_info(link, download=False)
-        for form in info['formats'][::-1]:
-            if str(form['format_id']) == '251':
-                break
-        else:
-            raise Exception("Format not found")
-
-    with YoutubeDL(ydl_opts_download_music) as yt:
-        if download:
-            yt.download(link)
-        else:
-            info = yt.extract_info(link, download=False)
-            yt.list_formats(info)
-
-
-def try_download_video(link, subdirectory=''):
-    # subdirectory is a string like: "subdir_name/"
     ydl_opts_download_video = {
         'ffmpeg_location': FFMPEG_PATH,
         "noplaylist": 1,
@@ -68,9 +57,28 @@ def try_download_video(link, subdirectory=''):
         'outtmpl': {
             'default': f'downloaded/{subdirectory}%(uploader)s - %(title)s.%(ext)s'
         },
+        'progress_hooks': [progress_callback] if progress_callback is not None else ''
     }
-    with YoutubeDL(ydl_opts_download_video) as yt:
-        yt.download(link)
+
+    ydl_opts = {
+        'video': ydl_opts_download_video,
+        'music': ydl_opts_download_music
+    }
+
+    # with YoutubeDL({"noplaylist": 1}) as yt:
+    #     info = yt.extract_info(link, download=False)
+    #     for form in info['formats'][::-1]:
+    #         if str(form['format_id']) == '251':
+    #             break
+    #     else:
+    #         raise Exception("Format not found")
+
+    with YoutubeDL(ydl_opts[kind]) as yt:
+        if download:
+            yt.download(link)
+        else:
+            info = yt.extract_info(link, download=False)
+            yt.list_formats(info)
 
 
 if __name__ == '__main__':
@@ -80,7 +88,7 @@ if __name__ == '__main__':
             was = True
         elif was:
             link = line.strip().split('&')[0]
-            try_download_music(link, True, subdirectory="7213129/")
+            try_download(link, 'music', True, subdirectory="7213129/")
             # isVideo("https://soundcloud.com/ihfmusic")
             # try_download_video(
             #     'https://www.youtube.com/watch?v=nNYGqJd-cHU&list=PL4_hYwCyhAvbPdTFj35Zg2_y30DzeOtvS&index=3')
