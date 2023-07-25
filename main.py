@@ -8,7 +8,7 @@ import re
 import shutil
 import subprocess
 from enum import Enum
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from telethon.tl.custom.message import Message
 from telethon.tl.types import PeerUser
@@ -35,6 +35,7 @@ class User:
     peer: PeerUser
     lastMessage: str
     link: str  # YouTube link to download
+    progressMessage: Optional[Message]
     toDelete: List[Message] = []
     lock: asyncio.Lock
     messageCounter = 0
@@ -54,6 +55,9 @@ class User:
 
     async def resetDialog(self):
         self.state = UserState.NONE
+        self.lastMessage = ""
+        self.link = ""
+        self.progressMessage = None
         await self.deleteMessages()
 
 
@@ -90,6 +94,15 @@ async def sendFile(user: User, kind):
     user.link = ""
     file = next(pathlib.Path(f"./downloaded/{directory}").iterdir())
     file = file.rename(f"./downloaded/{directory}/{file.name.removeprefix('NA - ')}")
+
+    def progress_callback(current, total):
+        if user.progressMessage is None:
+            return
+        percent = current / total * 100
+        percent = f"{percent:.2f}"
+        user.progressMessage.edit(f"Uploading {percent}%")
+
+    uploaded_file = await client.upload_file(file, progress_callback=progress_callback)
     await user.sendMessage(file=file, force_document=True)
     shutil.rmtree(pathlib.Path(f"./downloaded/{directory}"))
 
@@ -109,7 +122,14 @@ async def handleSendLogs(user: User):
 
 async def handleBeginDialog(user: User):
     message = user.lastMessage.lower()
-    if message == "alive":
+    if message == "help":
+        await user.sendMessage("I can do the following:\n"
+                               "1) `alive` - show uptime and IP\n"
+                               "2) `ping <target>` - ping target\n"
+                               "3) `reboot` - reboot the server\n"
+                               "4) `log` - send logs\n"
+                               "5) Send me a YouTube link to download it\n")
+    elif message == "alive":
         await handleAlive(user)
     elif message.startswith('ping'):
         await handlePing(user)
@@ -136,10 +156,11 @@ async def handlePing(user: User):
 
 async def handleYoutubeDownload(user: User):
     if not downloader.isVideo(user.lastMessage): return
-    user.toDelete.append(await user.sendMessage("Вы хотите скачать это как?\n"
+    user.progressMessage = await user.sendMessage("Вы хотите скачать это как?\n"
                                                 "> 1) Музыку\n"
                                                 "2) Видео\n"
-                                                "3) Не скачивать"))
+                                                "3) Не скачивать")
+    user.toDelete.append(user.progressMessage)
     # Useless message
     user.state = UserState.RESPONSE_MUSIC_OR_VIDEO
     user.link = user.lastMessage
