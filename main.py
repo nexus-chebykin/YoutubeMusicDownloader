@@ -100,7 +100,7 @@ async def sendFile(user: User, kind):
             return
         percent = current / total * 100
         percent = f"{percent:.2f}"
-        await user.progressMessage.edit(f"Uploading {percent}%")
+        createBackgroundTask(user.progressMessage.edit(f"Uploading {percent}%"))
 
     uploaded_file = await client.upload_file(file, progress_callback=progress_callback)
     await user.sendMessage(file=file, force_document=True)
