@@ -224,10 +224,15 @@ async def mainHandler(event: telethon.events.newmessage.NewMessage.Event):
     async with user.lock:
         user.messageCounter += 1
         user.lastMessage = event.message.message
-        if user.state == UserState.NONE:
-            await handleBeginDialog(user)
-        elif user.state == UserState.RESPONSE_MUSIC_OR_VIDEO:
-            await handleDecisionMusicOrVideo(user, event)
+        try:
+            if user.state == UserState.NONE:
+                await handleBeginDialog(user)
+            elif user.state == UserState.RESPONSE_MUSIC_OR_VIDEO:
+                await handleDecisionMusicOrVideo(user, event)
+        except Exception as e:
+            await user.sendMessage(f"An error has occurred: {str(e)}")
+            await user.resetDialog()
+
 
 
 @client.on(telethon.events.NewMessage())

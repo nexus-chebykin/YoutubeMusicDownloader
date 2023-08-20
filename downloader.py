@@ -53,7 +53,7 @@ def try_download(link, kind: Literal['music', 'video'], download=False, subdirec
     ydl_opts_download_video = {
         'ffmpeg_location': FFMPEG_PATH,
         "noplaylist": 1,
-        'format': 'bestvideo*+bestaudio/best',
+        'format': 'bestvideo*[height<=1080]+bestaudio/best[height<=1080]',
         'outtmpl': {
             'default': f'downloaded/{subdirectory}%(uploader)s - %(title)s.%(ext)s'
         },
