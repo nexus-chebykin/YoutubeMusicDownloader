@@ -26,13 +26,18 @@ def try_download(link, kind: Literal['music', 'video'], download=False, subdirec
     # download = False -> just prints out available formats
     # download = True -> downloads into  ./downloaded/
     # subdirectory is a string like: "subdir_name/"
-    ydl_opts_download_music = {
+    common = {
         'ffmpeg_location': FFMPEG_PATH,
         'format': 'bestaudio',
         'outtmpl': {
             'default': f'downloaded/{subdirectory}%(artist)s - %(title)s.%(ext)s'
         },
         "noplaylist": 1,
+        'progress_hooks': [progress_callback] if progress_callback is not None else '',
+        'source_address': '0.0.0.0',  # Force IPv4, since Интерсвязь дебилы
+    }
+    ydl_opts_download_music = {
+        **common,
         'writethumbnail': True,
         'postprocessors': [
             {
@@ -46,18 +51,11 @@ def try_download(link, kind: Literal['music', 'video'], download=False, subdirec
              'key': 'FFmpegMetadata'},
             {'key': 'EmbedThumbnail'},
         ],
-        'progress_hooks': [progress_callback] if progress_callback is not None else '',
 
     }
 
     ydl_opts_download_video = {
-        'ffmpeg_location': FFMPEG_PATH,
-        "noplaylist": 1,
-        'format': 'bestvideo*[height<=1080]+bestaudio/best[height<=1080]',
-        'outtmpl': {
-            'default': f'downloaded/{subdirectory}%(uploader)s - %(title)s.%(ext)s'
-        },
-        'progress_hooks': [progress_callback] if progress_callback is not None else ''
+        **common
     }
 
     ydl_opts = {
