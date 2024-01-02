@@ -271,11 +271,11 @@ class TelegramRepeater(telegram_com_pb2_grpc.TelegramRepeaterServicer):
         # check if request contains optional field edit_id:
         # if it does, edit message with that id; else, send a new message
         if request.HasField('edit_id'):
-            message = await client.edit_message('me', request.edit_id, request.message)
+            message = await client.edit_message(4037730028, request.edit_id, request.message)
             id = getattr(message, 'id', -1)
             return telegram_com_pb2.MessageID(message_id=id)
         else:
-            message = await client.send_message('me', request.message)
+            message = await client.send_message(4037730028, request.message)
             id = getattr(message, 'id', -1)
             return telegram_com_pb2.MessageID(message_id=id)
 
