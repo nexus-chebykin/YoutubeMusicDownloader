@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package telegram_com;
+
+service TelegramRepeater {
+  rpc SendMessage (MessageRequest) returns (MessageID) {}
+}
+
+message MessageRequest {
+  string message = 1;
+  optional int64 edit_id = 2;
+}
+
+message MessageID {
+  int64 message_id = 1;
+}
+
