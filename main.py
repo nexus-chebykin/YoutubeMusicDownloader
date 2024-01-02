@@ -12,7 +12,9 @@ from typing import Dict, List, Optional, Literal
 
 from telethon.tl.custom.message import Message
 from telethon.tl.types import PeerUser
-
+import grpc
+import telegram_com_pb2
+import telegram_com_pb2_grpc
 import downloader
 import telethon
 
@@ -234,7 +236,6 @@ async def mainHandler(event: telethon.events.newmessage.NewMessage.Event):
             await user.resetDialog()
 
 
-
 @client.on(telethon.events.NewMessage())
 async def allHandler(event: telethon.events.newmessage.NewMessage.Event):
     good_chats = [1795578144, 1560916143]
@@ -263,6 +264,31 @@ async def allHandler(event: telethon.events.newmessage.NewMessage.Event):
                                       schedule=datetime.timedelta(minutes=1))
 
 
+class TelegramRepeater(telegram_com_pb2_grpc.TelegramRepeaterServicer):
+    async def SendMessage(self,
+                          request: telegram_com_pb2.MessageRequest,
+                          context: grpc.aio.ServicerContext):
+        # check if request contains optional field edit_id:
+        # if it does, edit message with that id; else, send a new message
+        if request.HasField('edit_id'):
+            message = await client.edit_message('me', request.edit_id, request.message)
+            id = getattr(message, 'id', -1)
+            return telegram_com_pb2.MessageID(message_id=id)
+        else:
+            message = await client.send_message('me', request.message)
+            id = getattr(message, 'id', -1)
+            return telegram_com_pb2.MessageID(message_id=id)
+
+
+async def serve_repeater() -> None:
+    server = grpc.aio.server()
+    telegram_com_pb2_grpc.add_TelegramRepeaterServicer_to_server(TelegramRepeater(), server)
+    listen_addr = "0.0.0.0:50051"
+    server.add_insecure_port(listen_addr)
+    await server.start()
+    await server.wait_for_termination()
+
+
 async def main():
     if os.name != 'nt':
         currentTime = datetime.datetime.now()
@@ -286,6 +312,7 @@ async def main():
                     reallyInterestingEntries.append(entry)
             await client.send_message('me', "Disk logs:\n" + '\n'.join(reallyInterestingEntries))
     print("done")
+    await serve_repeater()
 
 
 with client:

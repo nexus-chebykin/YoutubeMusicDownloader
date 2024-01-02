@@ -4,3 +4,5 @@ pillow
 aiohttp
 yt-dlp
 telethon
+grpcio
+grpcio-tools
