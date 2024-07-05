@@ -303,11 +303,8 @@ async def main():
             # F Verbatim
             reallyInterestingEntries = []
             for entry in interestingEntries:
-                timestamp = ' '.join(entry[:15].split())
-                # Aug 2 17:25:01
-                timestamp = datetime.datetime.strptime(timestamp, "%b %d %H:%M:%S").replace(
-                    year=datetime.date.today().year
-                )
+                timestamp = entry[:len('2024-07-03T00:22:14.686239+05:00')]
+                timestamp = datetime.datetime.fromisoformat(timestamp)
                 if timestamp >= bootTime and "fsck" in entry:
                     reallyInterestingEntries.append(entry)
             await client.send_message('me', "Disk logs:\n" + '\n'.join(reallyInterestingEntries))
