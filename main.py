@@ -291,7 +291,8 @@ async def serve_repeater() -> None:
 
 async def main():
     if os.name != 'nt':
-        currentTime = datetime.datetime.now()
+        tz = datetime.datetime.now().astimezone().tzinfo
+        currentTime = datetime.datetime.now(tz)
         timeAlive = 0
         with open('/proc/uptime', 'r') as f:
             timeAlive = float(f.read().split()[0])
