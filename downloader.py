@@ -33,7 +33,6 @@ def try_download(link, kind: Literal['music', 'video'], download=False, subdirec
         },
         "noplaylist": 1,
         'progress_hooks': [progress_callback] if progress_callback is not None else '',
-        'source_address': '0.0.0.0',  # Force IPv4, since Интерсвязь дебилы
     }
     ydl_opts_download_music = {
         **common,
