@@ -242,11 +242,16 @@ async def allHandler(event: telethon.events.newmessage.NewMessage.Event):
     good_users = [242023883, 1054391041, 844541477, 550712077]
     chat_entity = await event.get_input_chat()
     user_entity = await event.get_input_sender()
-    user_entity = await client.get_entity(user_entity)
+    good = False
     try:
-        good = chat_entity.channel_id in good_chats or user_entity.id in good_users
-    except AttributeError:
-        return
+        good |= chat_entity.channel_id in good_chats
+    except Exception:
+        pass
+    try:
+        user_entity = await client.get_entity(user_entity)
+        good |= user_entity.id in good_users
+    except Exception:
+        pass
     if not good:
         return
     if event.message.text != '@all':
