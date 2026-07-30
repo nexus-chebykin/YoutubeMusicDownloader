@@ -69,7 +69,13 @@ class User:
 API_ID = int(os.environ["TG_API_ID"])
 API_HASH = os.environ["TG_API_HASH"]
 
-client = telethon.TelegramClient(session='myself', api_id=API_ID, api_hash=API_HASH, connection_retries=None)
+proxy = {
+    'proxy_type': 'socks5', # (mandatory) protocol to use (see above)
+    'addr': 'locahost',      # (mandatory) proxy IP address
+    'port': 6769,           # (mandatory) proxy port number
+    'rdns': True            # (optional) whether to use remote or local resolve, default remote
+}
+client = telethon.TelegramClient(session='myself', api_id=API_ID, api_hash=API_HASH, connection_retries=None, proxy=proxy)
 users: Dict[int, User] = {}
 
 commands = {
