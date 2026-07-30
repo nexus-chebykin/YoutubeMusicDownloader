@@ -71,7 +71,7 @@ API_HASH = os.environ["TG_API_HASH"]
 
 proxy = {
     'proxy_type': 'socks5', # (mandatory) protocol to use (see above)
-    'addr': 'locahost',      # (mandatory) proxy IP address
+    'addr': 'localhost',      # (mandatory) proxy IP address
     'port': 6769,           # (mandatory) proxy port number
     'rdns': True            # (optional) whether to use remote or local resolve, default remote
 }
