@@ -6,3 +6,4 @@ yt-dlp
 telethon
 grpcio
 grpcio-tools
+python-socks[asyncio]
